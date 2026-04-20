@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EpochNote - 智能科研管理工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            min-height: calc(100vh - 150px);
+        }
+
+        .panel {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-title .icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        /* 上传区域 */
+        .upload-section {
+            margin-bottom: 20px;
+        }
+
+        .upload-zone {
+            border: 3px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8fafc;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-zone.dragover {
+            transform: scale(1.01);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #a0aec0;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #4a5568;
+            font-size: 1rem;
+        }
+
+        .upload-text small {
+            color: #718096;
+            display: block;
+            margin-top: 8px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* 时间线区域 */
+        .timeline-section {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 500px;
+            padding-right: 10px;
+        }
+
+        .timeline-section::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .timeline-section::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .timeline-section::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        .timeline-section::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .timeline-node {
+            position: relative;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-node:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+
+        .timeline-node::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 24px;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .node-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .node-timestamp {
+            font-size: 0.85rem;
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .node-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn.edit {
+            background: #e6fffa;
+            color: #38b2ac;
+        }
+
+        .action-btn.edit:hover {
+            background: #81e6d9;
+            color: white;
+        }
+
+        .action-btn.delete {
+            background: #fff5f5;
+            color: #fc8181;
+        }
+
+        .action-btn.delete:hover {
+            background: #fc8181;
+            color: white;
+        }
+
+        .node-label {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .node-label.param-explore { background: #fef3c7; color: #92400e; }
+        .node-label.control { background: #d1fae5; color: #065f46; }
+        .node-label.preliminary { background: #dbeafe; color: #1e40af; }
+        .node-label.optimization { background: #fce7f3; color: #9d174d; }
+        .node-label.verification { background: #e0e7ff; color: #3730a3; }
+        .node-label.analysis { background: #fed7d7; color: #742a2a; }
+        .node-label.conclusion { background: #c6f6d5; color: #22543d; }
+        .node-label.other { background: #edf2f7; color: #2d3748; }
+
+        .node-content {
+            font-size: 0.9rem;
+            color: #4a5568;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .node-file-info {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #718096;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-icon {
+            font-size: 1rem;
+        }
+
+        /* 标签选择 */
+        .label-selector {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-top: 8px;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* 编辑模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #a0aec0;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: #f7fafc;
+            color: #4a5568;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 6px;
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            font-family: inherit;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: #edf2f7;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 右侧面板 - API配置和结果 */
+        .api-config-section {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .api-config-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .api-key-input {
+            display: flex;
+            gap: 8px;
+        }
+
+        .api-key-input .form-input {
+            flex: 1;
+            font-family: monospace;
+        }
+
+        .toggle-visibility {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-visibility:hover {
+            background: #f7fafc;
+        }
+
+        /* 生成按钮区域 */
+        .generate-section {
+            margin-bottom: 20px;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 14px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .generate-btn .icon {
+            font-size: 1.2rem;
+        }
+
+        /* 结果区域 */
+        .result-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 300px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .action-btn-sm.copy {
+            background: #e6fffa;
+            color: #38b2ac;
+        }
+
+        .action-btn-sm.copy:hover {
+            background: #81e6d9;
+            color: white;
+        }
+
+        .action-btn-sm.export {
+            background: #dbeafe;
+            color: #3182ce;
+        }
+
+        .action-btn-sm.export:hover {
+            background: #63b3ed;
+            color: white;
+        }
+
+        .result-content {
+            flex: 1;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .result-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .result-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .result-content::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        .result-text {
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: #4a5568;
+            white-space: pre-wrap;
+        }
+
+        .result-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #a0aec0;
+            text-align: center;
+        }
+
+        .result-placeholder .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* 加载状态 */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            z-index: 10;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 16px;
+            color: #4a5568;
+            font-size: 0.9rem;
+        }
+
+        /* 消息提示 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            z-index: 2000;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        }
+
+        .toast.info {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #a0aec0;
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 0.95rem;
+        }
+
+        /* 手动添加节点按钮 */
+        .add-manual-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background: #edf2f7;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            color: #4a5568;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .add-manual-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            color: #667eea;
+        }
+
+        /* 节点计数 */
+        .node-count {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .panel {
+                min-height: auto;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .panel {
+                padding: 16px;
+            }
+            
+            .upload-zone {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🧪 EpochNote</h1>
+            <p>智能科研管理工具 - 将碎片化实验记录自动编排为时间线，一键生成可复现实验叙事</p>
+        </header>
+
+        <div class="main-content">
+            <!-- 左侧面板 - 时间线 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="icon">📅</span>
+                        实验时间线
+                        <span class="node-count" id="nodeCount">0</span>
+                    </div>
+                </div>
+
+                <div class="upload-section">
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">
+                            拖拽文件到此处或点击上传
+                            <small>支持代码文件、数据图表、文本备忘录等</small>
+                        </div>
+                        <input type="file" class="file-input" id="fileInput" multiple>
+                    </div>
+                    
+                    <button class="add-manual-btn" id="addManualBtn">
+                        <span>➕</span>
+                        手动添加备忘录
+                    </button>
+                </div>
+
+                <div class="timeline-section">
+                    <div class="timeline" id="timeline">
+                        <div class="empty-state" id="emptyState">
+                            <div class="icon">📝</div>
+                            <p>上传文件或手动添加备忘录来创建时间线</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧面板 - 生成和结果 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="icon">✨</span>
+                        AI 实验叙事生成
+                    </div>
+                </div>
+
+                <div class="api-config-section">
+                    <div class="api-config-header">
+                        <span>🔑</span>
+                        DeepSeek API 配置
+                    </div>
+                    <div class="api-key-input">
+                        <input type="password" class="form-input" id="apiKey" placeholder="请输入您的 DeepSeek API Key">
+                        <button class="toggle-visibility" id="toggleVisibility" title="显示/隐藏">👁️</button>
+                    </div>
+                    <p style="font-size: 0.8rem; color: #718096; margin-top: 8px;">
+                        💡 API Key 仅保存在本地浏览器中，不会发送到我们的服务器
+                    </p>
+                </div>
+
+                <div class="generate-section">
+                    <button class="btn btn-primary generate-btn" id="generateBtn">
+                        <span class="icon">🚀</span>
+                        生成实验叙事文本
+                    </button>
+                </div>
+
+                <div class="result-section">
+                    <div class="result-header">
+                        <span class="result-title">生成结果</span>
+                        <div class="result-actions" id="resultActions" style="display: none;">
+                            <button class="btn action-btn-sm copy" id="copyBtn">
+                                📋 复制
+                            </button>
+                            <button class="btn action-btn-sm export" id="exportBtn">
+                                📥 导出 Markdown
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="result-content" style="position: relative;">
+                        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                            <div class="spinner"></div>
+                            <div class="loading-text">AI 正在生成实验叙事，请稍候...</div>
+                        </div>
+                        
+                        <div class="result-placeholder" id="resultPlaceholder">
+                            <div class="icon">📄</div>
+                            <p>上传实验记录并点击生成按钮<br>AI 将为您生成逻辑连贯的实验叙事文本</p>
+                        </div>
+                        
+                        <div class="result-text" id="resultText" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑模态框 -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">编辑时间节点</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">时间</label>
+                <input type="datetime-local" class="form-input" id="editTimestamp">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">决策标签</label>
+                <select class="form-select" id="editLabel">
+                    <option value="param-explore">参数探索</option>
+                    <option value="control">对照实验</option>
+                    <option value="preliminary">预实验</option>
+                    <option value="optimization">优化调整</option>
+                    <option value="verification">验证实验</option>
+                    <option value="analysis">结果分析</option>
+                    <option value="conclusion">结论总结</option>
+                    <option value="other">其他</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">内容描述</label>
+                <textarea class="form-textarea" id="editContent" placeholder="请输入实验内容描述..."></textarea>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelBtn">取消</button>
+                <button class="btn btn-primary" id="saveBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 消息 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const labelConfig = {
+            'param-explore': { text: '参数探索', class: 'param-explore' },
+            'control': { text: '对照实验', class: 'control' },
+            'preliminary': { text: '预实验', class: 'preliminary' },
+            'optimization': { text: '优化调整', class: 'optimization' },
+            'verification': { text: '验证实验', class: 'verification' },
+            'analysis': { text: '结果分析', class: 'analysis' },
+            'conclusion': { text: '结论总结', class: 'conclusion' },
+            'other': { text: '其他', class: 'other' }
+        };
+
+        let timelineNodes = [];
+        let currentEditNodeId = null;
+        let currentGeneratedText = '';
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const addManualBtn = document.getElementById('addManualBtn');
+        const timeline = document.getElementById('timeline');
+        const emptyState = document.getElementById('emptyState');
+        const nodeCount = document.getElementById('nodeCount');
+        const apiKeyInput = document.getElementById('apiKey');
+        const toggleVisibility = document.getElementById('toggleVisibility');
+        const generateBtn = document.getElementById('generateBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const resultPlaceholder = document.getElementById('resultPlaceholder');
+        const resultText = document.getElementById('resultText');
+        const resultActions = document.getElementById('resultActions');
+        const copyBtn = document.getElementById('copyBtn');
+        const exportBtn = document.getElementById('exportBtn');
+
+        const editModal = document.getElementById('editModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const editTimestamp = document.getElementById('editTimestamp');
+        const editLabel = document.getElementById('editLabel');
+        const editContent = document.getElementById('editContent');
+        const closeModal = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const saveBtn = document.getElementById('saveBtn');
+
+        const toast = document.getElementById('toast');
+
+        function showToast(message, type = 'info') {
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function formatDateTimeLocal(isoString) {
+            if (!isoString) {
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                return now.toISOString().slice(0, 16);
+            }
+            
+            const date = new Date(isoString);
+            date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+            return date.toISOString().slice(0, 16);
+        }
+
+        function formatDisplayTime(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getFileIcon(fileType) {
+            switch (fileType) {
+                case 'code': return '💻';
+                case 'image': return '🖼️';
+                case 'text': return '📝';
+                default: return '📄';
+            }
+        }
+
+        function renderTimeline() {
+            const sortedNodes = [...timelineNodes].sort((a, b) => 
+                new Date(a.timestamp) - new Date(b.timestamp)
+            );
+
+            if (sortedNodes.length === 0) {
+                emptyState.style.display = 'block';
+                nodeCount.textContent = '0';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            nodeCount.textContent = sortedNodes.length;
+
+            const existingNodes = timeline.querySelectorAll('.timeline-node');
+            existingNodes.forEach(node => node.remove());
+
+            sortedNodes.forEach((nodeData, index) => {
+                const nodeEl = document.createElement('div');
+                nodeEl.className = 'timeline-node';
+                nodeEl.dataset.id = nodeData.id;
+
+                const labelInfo = labelConfig[nodeData.label] || labelConfig['other'];
+
+                nodeEl.innerHTML = `
+                    <div class="node-header">
+                        <span class="node-timestamp">${formatDisplayTime(nodeData.timestamp)}</span>
+                        <div class="node-actions">
+                            <button class="action-btn edit" data-id="${nodeData.id}">✏️ 编辑</button>
+                            <button class="action-btn delete" data-id="${nodeData.id}">🗑️ 删除</button>
+                        </div>
+                    </div>
+                    <span class="node-label ${labelInfo.class}">${labelInfo.text}</span>
+                    <div class="node-content">${nodeData.content || '（无内容描述）'}</div>
+                    ${nodeData.file_name ? `
+                        <div class="node-file-info">
+                            <span class="file-icon">${getFileIcon(nodeData.file_type)}</span>
+                            <span>${nodeData.file_name}</span>
+                        </div>
+                    ` : ''}
+                `;
+
+                timeline.appendChild(nodeEl);
+            });
+
+            document.querySelectorAll('.action-btn.edit').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    openEditModal(id);
+                });
+            });
+
+            document.querySelectorAll('.action-btn.delete').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    deleteNode(id);
+                });
+            });
+        }
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('timestamp', new Date().toISOString());
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const nodeData = {
+                        id: result.data.id,
+                        timestamp: result.data.timestamp,
+                        label: 'other',
+                        content: result.data.content_preview || `文件: ${result.data.file_name}`,
+                        file_name: result.data.file_name,
+                        file_type: result.data.file_type
+                    };
+
+                    timelineNodes.push(nodeData);
+                    renderTimeline();
+                    showToast(`文件 "${file.name}" 上传成功！`, 'success');
+                    openEditModal(nodeData.id);
+                } else {
+                    showToast('上传失败: ' + (result.detail || '未知错误'), 'error');
+                }
+            } catch (error) {
+                showToast('上传失败: ' + error.message, 'error');
+            }
+        }
+
+        function addManualNode() {
+            const id = 'manual_' + Date.now();
+            const nodeData = {
+                id: id,
+                timestamp: new Date().toISOString(),
+                label: 'other',
+                content: '',
+                file_name: null,
+                file_type: null
+            };
+
+            timelineNodes.push(nodeData);
+            renderTimeline();
+            openEditModal(id);
+        }
+
+        function openEditModal(nodeId) {
+            currentEditNodeId = nodeId;
+            const node = timelineNodes.find(n => n.id === nodeId);
+
+            if (node) {
+                modalTitle.textContent = node.file_name ? '编辑文件节点' : '编辑备忘录';
+                editTimestamp.value = formatDateTimeLocal(node.timestamp);
+                editLabel.value = node.label;
+                editContent.value = node.content || '';
+            }
+
+            editModal.classList.add('active');
+        }
+
+        function closeEditModal() {
+            editModal.classList.remove('active');
+            currentEditNodeId = null;
+        }
+
+        function saveNode() {
+            if (!currentEditNodeId) return;
+
+            const node = timelineNodes.find(n => n.id === currentEditNodeId);
+            if (node) {
+                node.timestamp = new Date(editTimestamp.value).toISOString();
+                node.label = editLabel.value;
+                node.content = editContent.value;
+
+                renderTimeline();
+                showToast('保存成功！', 'success');
+            }
+
+            closeEditModal();
+        }
+
+        function deleteNode(nodeId) {
+            const index = timelineNodes.findIndex(n => n.id === nodeId);
+            if (index !== -1) {
+                timelineNodes.splice(index, 1);
+                renderTimeline();
+                showToast('节点已删除', 'info');
+            }
+        }
+
+        async function generateNarrative() {
+            const apiKey = apiKeyInput.value.trim();
+            
+            if (!apiKey) {
+                showToast('请先输入 DeepSeek API Key', 'error');
+                return;
+            }
+
+            if (timelineNodes.length === 0) {
+                showToast('请先添加至少一个时间节点', 'error');
+                return;
+            }
+
+            loadingOverlay.style.display = 'flex';
+            resultPlaceholder.style.display = 'none';
+            resultText.style.display = 'none';
+            resultActions.style.display = 'none';
+
+            try {
+                const sortedNodes = [...timelineNodes].sort((a, b) => 
+                    new Date(a.timestamp) - new Date(b.timestamp)
+                );
+
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        timeline: sortedNodes
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentGeneratedText = result.data.narrative;
+                    resultText.textContent = currentGeneratedText;
+                    resultText.style.display = 'block';
+                    resultActions.style.display = 'flex';
+                    showToast('生成成功！', 'success');
+                } else {
+                    resultPlaceholder.style.display = 'flex';
+                    showToast('生成失败: ' + (result.detail || '未知错误'), 'error');
+                }
+            } catch (error) {
+                resultPlaceholder.style.display = 'flex';
+                showToast('生成失败: ' + error.message, 'error');
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        async function copyToClipboard() {
+            if (!currentGeneratedText) return;
+
+            try {
+                await navigator.clipboard.writeText(currentGeneratedText);
+                showToast('已复制到剪贴板！', 'success');
+            } catch (error) {
+                showToast('复制失败: ' + error.message, 'error');
+            }
+        }
+
+        async function exportMarkdown() {
+            if (!currentGeneratedText) return;
+
+            try {
+                const response = await fetch('/api/export/markdown', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content: currentGeneratedText,
+                        filename: 'experiment_narrative'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    window.location.href = `/api/download/${result.data.filename}`;
+                    showToast('导出成功！', 'success');
+                } else {
+                    showToast('导出失败: ' + (result.detail || '未知错误'), 'error');
+                }
+            } catch (error) {
+                showToast('导出失败: ' + error.message, 'error');
+            }
+        }
+
+        function toggleApiKeyVisibility() {
+            const type = apiKeyInput.type === 'password' ? 'text' : 'password';
+            apiKeyInput.type = type;
+            toggleVisibility.textContent = type === 'password' ? '👁️' : '🙈';
+        }
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                Array.from(files).forEach(file => uploadFile(file));
+            }
+        });
+
+        uploadZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                Array.from(files).forEach(file => uploadFile(file));
+            }
+            fileInput.value = '';
+        });
+
+        addManualBtn.addEventListener('click', addManualNode);
+        toggleVisibility.addEventListener('click', toggleApiKeyVisibility);
+        generateBtn.addEventListener('click', generateNarrative);
+        copyBtn.addEventListener('click', copyToClipboard);
+        exportBtn.addEventListener('click', exportMarkdown);
+
+        closeModal.addEventListener('click', closeEditModal);
+        cancelBtn.addEventListener('click', closeEditModal);
+        saveBtn.addEventListener('click', saveNode);
+
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) {
+                closeEditModal();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && editModal.classList.contains('active')) {
+                closeEditModal();
+            }
+        });
+
+        const savedApiKey = localStorage.getItem('deepseek_api_key');
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+        }
+
+        apiKeyInput.addEventListener('input', (e) => {
+            localStorage.setItem('deepseek_api_key', e.target.value);
+        });
+
+        renderTimeline();
+    </script>
+</body>
+</html>
