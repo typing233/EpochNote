@@ -1383,6 +1383,11 @@
                 nodeEl.className = 'timeline-node';
                 nodeEl.dataset.id = nodeData.id;
 
+                if (nodeData._isProcessing) {
+                    nodeEl.style.opacity = '0.8';
+                    nodeEl.style.border = '2px solid #fbbf24';
+                }
+
                 const labelInfo = labelConfig[nodeData.label] || labelConfig['other'];
 
                 const autoTagsHtml = nodeData.tags && nodeData.tags.length > 0 
@@ -1396,23 +1401,30 @@
                        </div>`
                     : '';
 
-                const hasFile = nodeData.file_name && nodeData.file_type !== 'other';
-                const hasEmbedding = nodeData.embedding_vector && nodeData.embedding_vector.length > 0;
+                const processingHtml = nodeData._isProcessing 
+                    ? `<div class="processing-indicator">
+                        <span class="dot"></span>
+                        ${nodeData._processingStatus === 'uploading' ? '正在上传文件...' : '正在解析与分析标签...'}
+                       </div>`
+                    : '';
+
+                const hasFile = nodeData.file_name && nodeData.file_type !== 'other' && !nodeData._isProcessing;
 
                 nodeEl.innerHTML = `
                     <div class="node-header">
                         <span class="node-timestamp">${formatDisplayTime(nodeData.timestamp)}</span>
                         <div class="node-actions">
                             ${hasFile ? `<button class="action-btn preview" data-id="${nodeData.id}" data-file="${nodeData.file_name}">👁️ 预览</button>` : ''}
-                            <button class="action-btn related" data-id="${nodeData.id}">🔗 相关</button>
-                            <button class="action-btn edit" data-id="${nodeData.id}">✏️ 编辑</button>
-                            <button class="action-btn delete" data-id="${nodeData.id}">🗑️ 删除</button>
+                            ${!nodeData._isProcessing ? `<button class="action-btn related" data-id="${nodeData.id}">🔗 相关</button>` : ''}
+                            ${!nodeData._isProcessing ? `<button class="action-btn edit" data-id="${nodeData.id}">✏️ 编辑</button>` : ''}
+                            ${!nodeData._isProcessing ? `<button class="action-btn delete" data-id="${nodeData.id}">🗑️ 删除</button>` : ''}
                         </div>
                     </div>
                     <span class="node-label ${labelInfo.class}">${labelInfo.text}</span>
                     ${autoTagsHtml}
                     <div class="node-content">${nodeData.content || '（无内容描述）'}</div>
-                    ${nodeData.file_name ? `
+                    ${processingHtml}
+                    ${nodeData.file_name && !nodeData._isProcessing ? `
                         <div class="node-file-info" data-file="${nodeData.file_name}" data-type="${nodeData.file_type}">
                             <span class="file-icon">${getFileIcon(nodeData.file_type)}</span>
                             <span>${nodeData.file_name}</span>
@@ -1490,7 +1502,27 @@
             return selected;
         }
 
+        let processingNodes = new Set();
+
         async function uploadFile(file) {
+            const tempId = 'uploading_' + Date.now();
+            const tempNode = {
+                id: tempId,
+                timestamp: new Date().toISOString(),
+                label: 'other',
+                tags: [],
+                content: `正在上传文件: ${file.name}...`,
+                file_name: file.name,
+                file_type: getFileTypeFromName(file.name),
+                embedding_vector: [],
+                _isProcessing: true,
+                _processingStatus: 'uploading'
+            };
+
+            timelineNodes.push(tempNode);
+            renderTimeline();
+            showToast(`正在上传文件 "${file.name}"...`, 'info');
+
             const formData = new FormData();
             formData.append('file', file);
             formData.append('timestamp', new Date().toISOString());
@@ -1515,9 +1547,24 @@
                         embedding_vector: []
                     };
 
-                    timelineNodes.push(nodeData);
-                    renderTimeline();
-                    showToast(`文件 "${file.name}" 上传成功！`, 'success');
+                    const tempIndex = timelineNodes.findIndex(n => n.id === tempId);
+                    if (tempIndex !== -1) {
+                        timelineNodes[tempIndex] = {
+                            ...nodeData,
+                            _isProcessing: true,
+                            _processingStatus: 'analyzing'
+                        };
+                        renderTimeline();
+                    } else {
+                        timelineNodes.push({
+                            ...nodeData,
+                            _isProcessing: true,
+                            _processingStatus: 'analyzing'
+                        });
+                        renderTimeline();
+                    }
+
+                    showToast(`文件 "${file.name}" 上传成功！正在分析内容...`, 'success');
                     
                     const apiKey = getApiKey();
                     if (apiKey) {
@@ -1525,13 +1572,45 @@
                         await generateEmbeddingForNode(nodeData.id, nodeData.content);
                     }
                     
+                    const finalIndex = timelineNodes.findIndex(n => n.id === nodeData.id);
+                    if (finalIndex !== -1) {
+                        delete timelineNodes[finalIndex]._isProcessing;
+                        delete timelineNodes[finalIndex]._processingStatus;
+                        renderTimeline();
+                    }
+                    
                     openEditModal(nodeData.id);
                 } else {
+                    const tempIndex = timelineNodes.findIndex(n => n.id === tempId);
+                    if (tempIndex !== -1) {
+                        timelineNodes.splice(tempIndex, 1);
+                        renderTimeline();
+                    }
                     showToast('上传失败: ' + (result.detail || '未知错误'), 'error');
                 }
             } catch (error) {
+                const tempIndex = timelineNodes.findIndex(n => n.id === tempId);
+                if (tempIndex !== -1) {
+                    timelineNodes.splice(tempIndex, 1);
+                    renderTimeline();
+                }
                 showToast('上传失败: ' + error.message, 'error');
             }
+        }
+
+        function getFileTypeFromName(fileName) {
+            const ext = fileName.split('.').pop().toLowerCase();
+            const mapping = {
+                'png': 'image', 'jpg': 'image', 'jpeg': 'image', 'gif': 'image', 'svg': 'image', 'bmp': 'image', 'webp': 'image',
+                'pdf': 'pdf',
+                'py': 'code', 'js': 'code', 'ts': 'code', 'java': 'code', 'cpp': 'code', 'c': 'code', 'go': 'code', 'rs': 'code',
+                'html': 'code', 'css': 'code', 'json': 'code', 'yaml': 'code', 'yml': 'code',
+                'md': 'markdown', 'markdown': 'markdown',
+                'txt': 'text', 'log': 'text',
+                'mp3': 'audio', 'wav': 'audio', 'ogg': 'audio', 'flac': 'audio', 'aac': 'audio',
+                'mp4': 'video', 'webm': 'video', 'avi': 'video', 'mov': 'video', 'mkv': 'video'
+            };
+            return mapping[ext] || 'other';
         }
 
         async function autoTagNode(nodeId, content, fileName = null) {
@@ -1818,20 +1897,8 @@
         async function openRelatedModal(nodeId) {
             const apiKey = getApiKey();
             
-            if (!apiKey) {
-                relatedList.innerHTML = `<div class="no-related">
-                    <div class="icon">🔑</div>
-                    <p>请先配置 DeepSeek API Key</p>
-                    <p style="font-size: 0.85rem; margin-top: 8px; color: #718096;">
-                        智能推荐功能需要向量嵌入支持
-                    </p>
-                </div>`;
-                relatedModal.classList.add('active');
-                return;
-            }
-
             const currentNode = timelineNodes.find(n => n.id === nodeId);
-            if (currentNode && (!currentNode.embedding_vector || currentNode.embedding_vector.length === 0)) {
+            if (currentNode && (!currentNode.embedding_vector || currentNode.embedding_vector.length === 0) && apiKey) {
                 showToast('正在为当前笔记生成向量嵌入...', 'info');
                 await generateEmbeddingForNode(nodeId, currentNode.content);
             }
@@ -1848,6 +1915,7 @@
                     body: JSON.stringify({
                         api_key: apiKey,
                         node_id: nodeId,
+                        all_nodes: timelineNodes,
                         top_k: 5
                     })
                 });

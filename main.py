@@ -104,8 +104,9 @@ class EmbeddingRequest(BaseModel):
     node_id: str
 
 class SimilaritySearchRequest(BaseModel):
-    api_key: str
+    api_key: Optional[str] = None
     node_id: str
+    all_nodes: List[TimelineNode] = []
     top_k: int = 5
 
 class UpdateTagsRequest(BaseModel):
@@ -316,6 +317,16 @@ async def generate_embedding(request: EmbeddingRequest):
     try:
         content_for_embedding = request.content[:2000] if request.content else ""
         
+        if not content_for_embedding or not content_for_embedding.strip():
+            return JSONResponse(content={
+                "success": True,
+                "data": {
+                    "node_id": request.node_id,
+                    "embedding_vector": [],
+                    "message": "内容为空，跳过向量生成"
+                }
+            })
+        
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 "https://api.deepseek.com/v1/embeddings",
@@ -324,18 +335,33 @@ async def generate_embedding(request: EmbeddingRequest):
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "deepseek-embedding",
+                    "model": "deepseek-chat",
                     "input": content_for_embedding
                 }
             )
             
             if response.status_code != 200:
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"DeepSeek Embedding API 调用失败: {response.text}"
-                )
+                return JSONResponse(content={
+                    "success": False,
+                    "data": {
+                        "node_id": request.node_id,
+                        "embedding_vector": [],
+                        "error": f"API 调用失败: {response.text}"
+                    }
+                })
             
             result = response.json()
+            
+            if "data" not in result or not result["data"]:
+                return JSONResponse(content={
+                    "success": False,
+                    "data": {
+                        "node_id": request.node_id,
+                        "embedding_vector": [],
+                        "error": "API 返回格式不正确"
+                    }
+                })
+            
             embedding = result["data"][0]["embedding"]
             
             db = next(get_db())
@@ -353,48 +379,142 @@ async def generate_embedding(request: EmbeddingRequest):
                 }
             })
             
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=f"API 请求错误: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(content={
+            "success": False,
+            "data": {
+                "node_id": request.node_id,
+                "embedding_vector": [],
+                "error": str(e)
+            }
+        })
+
+def keyword_similarity(text1: str, text2: str) -> float:
+    if not text1 or not text2:
+        return 0.0
+    
+    text1 = text1.lower()
+    text2 = text2.lower()
+    
+    keywords = {
+        "参数探索": ["参数", "学习率", "超参数", "调整", "探索", "尝试"],
+        "对照实验": ["对照", "对照组", "对比", "基准", "控制变量"],
+        "预实验": ["预实验", "初步", "初探", "小规模", "测试"],
+        "优化调整": ["优化", "改进", "调整", "策略", "调度器", "正则化"],
+        "验证实验": ["验证", "确认", "检验", "验证集", "测试集"],
+        "结果分析": ["分析", "结果", "混淆矩阵", "准确率", "错误率"],
+        "结论总结": ["结论", "总结", "发现", "建议", "最终"]
+    }
+    
+    score = 0.0
+    max_score = 0.0
+    
+    for tag, words in keywords.items():
+        count1 = sum(1 for word in words if word in text1)
+        count2 = sum(1 for word in words if word in text2)
+        max_score += 1.0
+        if count1 > 0 and count2 > 0:
+            score += 1.0
+    
+    text1_words = set(re.findall(r'[\u4e00-\u9fff]+|[a-zA-Z]+', text1))
+    text2_words = set(re.findall(r'[\u4e00-\u9fff]+|[a-zA-Z]+', text2))
+    
+    if text1_words and text2_words:
+        intersection = text1_words.intersection(text2_words)
+        union = text1_words.union(text2_words)
+        jaccard = len(intersection) / len(union) if union else 0
+        score += jaccard * 2
+        max_score += 2
+    
+    return score / max_score if max_score > 0 else 0.0
 
 @app.post("/api/similarity-search")
 async def similarity_search(request: SimilaritySearchRequest):
     try:
-        db = next(get_db())
-        target_node = db.query(TimelineNodeDB).filter(TimelineNodeDB.id == request.node_id).first()
-        
-        if not target_node:
-            raise HTTPException(status_code=404, detail="目标节点不存在")
-        
-        target_embedding = target_node.embedding_vector
-        if not target_embedding:
-            return JSONResponse(content={
-                "success": True,
-                "data": {
-                    "similar_nodes": []
-                }
-            })
-        
-        all_nodes = db.query(TimelineNodeDB).filter(
-            TimelineNodeDB.id != request.node_id,
-            TimelineNodeDB.embedding_vector != []
-        ).all()
-        
-        similarities = []
-        for node in all_nodes:
-            sim = cosine_similarity(target_embedding, node.embedding_vector)
-            if sim > 0:
-                similarities.append({
-                    "node_id": node.id,
-                    "timestamp": node.timestamp.isoformat() if node.timestamp else None,
-                    "label": node.label,
-                    "tags": node.tags or [],
-                    "content": node.content[:200] if node.content else "",
-                    "file_name": node.file_name,
-                    "file_type": node.file_type,
-                    "similarity": sim
+        if not request.all_nodes:
+            db = next(get_db())
+            target_node_db = db.query(TimelineNodeDB).filter(TimelineNodeDB.id == request.node_id).first()
+            
+            if not target_node_db:
+                return JSONResponse(content={
+                    "success": True,
+                    "data": {
+                        "similar_nodes": [],
+                        "message": "目标节点不存在"
+                    }
                 })
+            
+            all_db_nodes = db.query(TimelineNodeDB).filter(
+                TimelineNodeDB.id != request.node_id
+            ).all()
+            
+            similarities = []
+            target_embedding = target_node_db.embedding_vector
+            target_content = target_node_db.content or ""
+            
+            for node in all_db_nodes:
+                sim = 0.0
+                
+                if target_embedding and node.embedding_vector:
+                    sim = cosine_similarity(target_embedding, node.embedding_vector)
+                
+                if sim <= 0:
+                    sim = keyword_similarity(target_content, node.content or "")
+                
+                if sim > 0:
+                    similarities.append({
+                        "node_id": node.id,
+                        "timestamp": node.timestamp.isoformat() if node.timestamp else None,
+                        "label": node.label,
+                        "tags": node.tags or [],
+                        "content": node.content[:200] if node.content else "",
+                        "file_name": node.file_name,
+                        "file_type": node.file_type,
+                        "similarity": sim
+                    })
+        else:
+            target_node = None
+            for node in request.all_nodes:
+                if node.id == request.node_id:
+                    target_node = node
+                    break
+            
+            if not target_node:
+                return JSONResponse(content={
+                    "success": True,
+                    "data": {
+                        "similar_nodes": [],
+                        "message": "目标节点不存在"
+                    }
+                })
+            
+            similarities = []
+            target_embedding = target_node.embedding_vector or []
+            target_content = target_node.content or ""
+            
+            for node in request.all_nodes:
+                if node.id == request.node_id:
+                    continue
+                
+                sim = 0.0
+                
+                if target_embedding and node.embedding_vector:
+                    sim = cosine_similarity(target_embedding, node.embedding_vector)
+                
+                if sim <= 0:
+                    sim = keyword_similarity(target_content, node.content or "")
+                
+                if sim > 0:
+                    similarities.append({
+                        "node_id": node.id,
+                        "timestamp": node.timestamp,
+                        "label": node.label,
+                        "tags": node.tags or [],
+                        "content": node.content[:200] if node.content else "",
+                        "file_name": node.file_name,
+                        "file_type": node.file_type,
+                        "similarity": sim
+                    })
         
         similarities.sort(key=lambda x: x["similarity"], reverse=True)
         top_k = similarities[:request.top_k]
@@ -406,7 +526,15 @@ async def similarity_search(request: SimilaritySearchRequest):
             }
         })
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(content={
+            "success": False,
+            "data": {
+                "similar_nodes": [],
+                "error": str(e)
+            }
+        })
 
 @app.get("/api/file-preview/{filename}")
 async def get_file_preview(filename: str):
