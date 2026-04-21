@@ -582,14 +582,12 @@ async def get_file_preview(filename: str):
             })
         
         elif file_type == "pdf":
-            with open(filepath, "rb") as f:
-                pdf_data = base64.b64encode(f.read()).decode('utf-8')
-            
             return JSONResponse(content={
                 "success": True,
                 "data": {
                     "file_type": "pdf",
-                    "content": f"data:application/pdf;base64,{pdf_data}"
+                    "file_url": f"/uploads/{filename}",
+                    "mime_type": "application/pdf"
                 }
             })
         

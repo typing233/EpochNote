@@ -1838,7 +1838,12 @@
                             break;
 
                         case 'pdf':
-                            previewHtml = `<iframe src="${data.content}" class="preview-pdf"></iframe>`;
+                            previewHtml = `<iframe src="${data.file_url}" class="preview-pdf"></iframe>
+                                <div style="margin-top: 10px; text-align: center;">
+                                    <a href="${data.file_url}" target="_blank" style="font-size: 0.85rem; color: #667eea; text-decoration: underline;">
+                                        如果无法预览，请点击在新标签页打开 PDF
+                                    </a>
+                                </div>`;
                             break;
 
                         case 'code':
