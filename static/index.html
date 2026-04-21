@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EpochNote - 智能科研管理工具</title>
+    <title>EpochNote - 智能科研管理工具 v2.0</title>
     <style>
         * {
             margin: 0;
@@ -39,6 +39,15 @@
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
+        }
+
+        .header .version-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 8px;
         }
 
         .main-content {
@@ -87,7 +96,6 @@
             font-size: 16px;
         }
 
-        /* 上传区域 */
         .upload-section {
             margin-bottom: 20px;
         }
@@ -133,7 +141,34 @@
             display: none;
         }
 
-        /* 时间线区域 */
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .quick-action-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: #4a5568;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .quick-action-btn:hover {
+            background: #f0f4ff;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
         .timeline-section {
             flex: 1;
             overflow-y: auto;
@@ -218,7 +253,8 @@
 
         .node-actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
         .action-btn {
@@ -228,6 +264,9 @@
             border-radius: 4px;
             cursor: pointer;
             transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .action-btn.edit {
@@ -250,13 +289,33 @@
             color: white;
         }
 
+        .action-btn.preview {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .action-btn.preview:hover {
+            background: #2563eb;
+            color: white;
+        }
+
+        .action-btn.related {
+            background: #fce7f3;
+            color: #db2777;
+        }
+
+        .action-btn.related:hover {
+            background: #db2777;
+            color: white;
+        }
+
         .node-label {
             display: inline-block;
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .node-label.param-explore { background: #fef3c7; color: #92400e; }
@@ -267,6 +326,29 @@
         .node-label.analysis { background: #fed7d7; color: #742a2a; }
         .node-label.conclusion { background: #c6f6d5; color: #22543d; }
         .node-label.other { background: #edf2f7; color: #2d3748; }
+
+        .auto-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .auto-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            color: #4338ca;
+            border-radius: 16px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .auto-tag .tag-icon {
+            font-size: 0.6rem;
+        }
 
         .node-content {
             font-size: 0.9rem;
@@ -286,25 +368,18 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .node-file-info:hover {
+            background: #f0f4ff;
         }
 
         .file-icon {
             font-size: 1rem;
         }
 
-        /* 标签选择 */
-        .label-selector {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            margin-top: 8px;
-            background: white;
-            cursor: pointer;
-        }
-
-        /* 编辑模态框 */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -331,11 +406,19 @@
             border-radius: 16px;
             padding: 24px;
             width: 90%;
-            max-width: 500px;
+            max-width: 800px;
             max-height: 90vh;
             overflow-y: auto;
             transform: scale(0.9);
             transition: transform 0.3s ease;
+        }
+
+        .modal.small {
+            max-width: 500px;
+        }
+
+        .modal.large {
+            max-width: 1000px;
         }
 
         .modal-overlay.active .modal {
@@ -388,6 +471,12 @@
             margin-bottom: 6px;
         }
 
+        .form-label .sub-label {
+            font-size: 0.75rem;
+            color: #718096;
+            font-weight: normal;
+        }
+
         .form-input,
         .form-textarea,
         .form-select {
@@ -412,6 +501,50 @@
             min-height: 120px;
             resize: vertical;
             line-height: 1.5;
+        }
+
+        .tags-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .tag-option {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid #e2e8f0;
+            background: white;
+            color: #4a5568;
+        }
+
+        .tag-option:hover {
+            border-color: #667eea;
+        }
+
+        .tag-option.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .tag-option.ai-suggested {
+            position: relative;
+        }
+
+        .tag-option.ai-suggested::after {
+            content: 'AI推荐';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #10b981;
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 8px;
         }
 
         .modal-footer {
@@ -461,7 +594,11 @@
             transform: none;
         }
 
-        /* 右侧面板 - API配置和结果 */
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
         .api-config-section {
             margin-bottom: 20px;
             padding: 16px;
@@ -502,7 +639,6 @@
             background: #f7fafc;
         }
 
-        /* 生成按钮区域 */
         .generate-section {
             margin-bottom: 20px;
         }
@@ -518,7 +654,6 @@
             font-size: 1.2rem;
         }
 
-        /* 结果区域 */
         .result-section {
             flex: 1;
             display: flex;
@@ -616,7 +751,6 @@
             opacity: 0.5;
         }
 
-        /* 加载状态 */
         .loading-overlay {
             position: absolute;
             top: 0;
@@ -651,7 +785,6 @@
             font-size: 0.9rem;
         }
 
-        /* 消息提示 */
         .toast {
             position: fixed;
             top: 20px;
@@ -682,7 +815,6 @@
             background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
         }
 
-        /* 空状态 */
         .empty-state {
             text-align: center;
             padding: 40px 20px;
@@ -699,7 +831,6 @@
             font-size: 0.95rem;
         }
 
-        /* 手动添加节点按钮 */
         .add-manual-btn {
             width: 100%;
             padding: 12px;
@@ -723,7 +854,6 @@
             color: #667eea;
         }
 
-        /* 节点计数 */
         .node-count {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -733,7 +863,156 @@
             font-weight: 600;
         }
 
-        /* 响应式 */
+        .preview-content {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 60vh;
+            overflow: auto;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .preview-code {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .preview-pdf {
+            width: 100%;
+            height: 500px;
+            border: none;
+            border-radius: 8px;
+        }
+
+        .preview-media {
+            width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+        }
+
+        .related-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .related-item {
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .related-item:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .related-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .similarity-bar {
+            width: 80px;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .similarity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .similarity-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #10b981;
+        }
+
+        .related-content {
+            font-size: 0.85rem;
+            color: #4a5568;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .related-tags {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .related-tag {
+            padding: 2px 8px;
+            background: #e0e7ff;
+            color: #4338ca;
+            border-radius: 10px;
+            font-size: 0.7rem;
+        }
+
+        .no-related {
+            text-align: center;
+            padding: 40px;
+            color: #a0aec0;
+        }
+
+        .no-related .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .processing-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-top: 8px;
+        }
+
+        .processing-indicator .dot {
+            width: 6px;
+            height: 6px;
+            background: #92400e;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         @media (max-width: 1024px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -760,6 +1039,10 @@
             .upload-zone {
                 padding: 24px;
             }
+            
+            .quick-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -767,11 +1050,11 @@
     <div class="container">
         <header class="header">
             <h1>🧪 EpochNote</h1>
-            <p>智能科研管理工具 - 将碎片化实验记录自动编排为时间线，一键生成可复现实验叙事</p>
+            <p>智能科研管理工具 - 自动打标签 · 文件预览 · 智能推荐</p>
+            <span class="version-badge">v2.0</span>
         </header>
 
         <div class="main-content">
-            <!-- 左侧面板 - 时间线 -->
             <div class="panel">
                 <div class="panel-header">
                     <div class="panel-title">
@@ -786,15 +1069,21 @@
                         <div class="upload-icon">📁</div>
                         <div class="upload-text">
                             拖拽文件到此处或点击上传
-                            <small>支持代码文件、数据图表、文本备忘录等</small>
+                            <small>支持图片、PDF、代码、Markdown、音视频等</small>
                         </div>
                         <input type="file" class="file-input" id="fileInput" multiple>
                     </div>
                     
-                    <button class="add-manual-btn" id="addManualBtn">
-                        <span>➕</span>
-                        手动添加备忘录
-                    </button>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" id="addManualBtn">
+                            <span>📝</span>
+                            手动添加备忘录
+                        </button>
+                        <button class="quick-action-btn" id="loadTestDataBtn">
+                            <span>🧪</span>
+                            加载测试数据
+                        </button>
+                    </div>
                 </div>
 
                 <div class="timeline-section">
@@ -807,7 +1096,6 @@
                 </div>
             </div>
 
-            <!-- 右侧面板 - 生成和结果 -->
             <div class="panel">
                 <div class="panel-header">
                     <div class="panel-title">
@@ -868,12 +1156,11 @@
         </div>
     </div>
 
-    <!-- 编辑模态框 -->
     <div class="modal-overlay" id="editModal">
-        <div class="modal">
+        <div class="modal small">
             <div class="modal-header">
                 <h3 class="modal-title" id="modalTitle">编辑时间节点</h3>
-                <button class="modal-close" id="closeModal">&times;</button>
+                <button class="modal-close" id="closeEditModal">&times;</button>
             </div>
             
             <div class="form-group">
@@ -896,21 +1183,66 @@
             </div>
             
             <div class="form-group">
+                <label class="form-label">
+                    自动标签
+                    <span class="sub-label">（AI 自动推荐，可手动修改）</span>
+                </label>
+                <div class="tags-selector" id="tagsSelector">
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="autoTagBtn" style="margin-top: 10px;">
+                    🤖 AI 重新推荐标签
+                </button>
+            </div>
+            
+            <div class="form-group">
                 <label class="form-label">内容描述</label>
                 <textarea class="form-textarea" id="editContent" placeholder="请输入实验内容描述..."></textarea>
             </div>
             
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelBtn">取消</button>
-                <button class="btn btn-primary" id="saveBtn">保存</button>
+                <button class="btn btn-secondary" id="cancelEditBtn">取消</button>
+                <button class="btn btn-primary" id="saveEditBtn">保存</button>
             </div>
         </div>
     </div>
 
-    <!-- Toast 消息 -->
+    <div class="modal-overlay" id="previewModal">
+        <div class="modal large">
+            <div class="modal-header">
+                <h3 class="modal-title" id="previewTitle">文件预览</h3>
+                <button class="modal-close" id="closePreviewModal">&times;</button>
+            </div>
+            
+            <div class="preview-content" id="previewContent">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="relatedModal">
+        <div class="modal small">
+            <div class="modal-header">
+                <h3 class="modal-title">相关记录</h3>
+                <button class="modal-close" id="closeRelatedModal">&times;</button>
+            </div>
+            
+            <div class="related-list" id="relatedList">
+            </div>
+        </div>
+    </div>
+
     <div class="toast" id="toast"></div>
 
     <script>
+        const AVAILABLE_TAGS = [
+            "参数探索",
+            "对照实验", 
+            "预实验",
+            "优化调整",
+            "验证实验",
+            "结果分析",
+            "结论总结"
+        ];
+
         const labelConfig = {
             'param-explore': { text: '参数探索', class: 'param-explore' },
             'control': { text: '对照实验', class: 'control' },
@@ -925,10 +1257,12 @@
         let timelineNodes = [];
         let currentEditNodeId = null;
         let currentGeneratedText = '';
+        let aiSuggestedTags = [];
 
         const uploadZone = document.getElementById('uploadZone');
         const fileInput = document.getElementById('fileInput');
         const addManualBtn = document.getElementById('addManualBtn');
+        const loadTestDataBtn = document.getElementById('loadTestDataBtn');
         const timeline = document.getElementById('timeline');
         const emptyState = document.getElementById('emptyState');
         const nodeCount = document.getElementById('nodeCount');
@@ -947,11 +1281,26 @@
         const editTimestamp = document.getElementById('editTimestamp');
         const editLabel = document.getElementById('editLabel');
         const editContent = document.getElementById('editContent');
-        const closeModal = document.getElementById('closeModal');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const saveBtn = document.getElementById('saveBtn');
+        const tagsSelector = document.getElementById('tagsSelector');
+        const autoTagBtn = document.getElementById('autoTagBtn');
+        const closeEditModal = document.getElementById('closeEditModal');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const saveEditBtn = document.getElementById('saveEditBtn');
+
+        const previewModal = document.getElementById('previewModal');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewContent = document.getElementById('previewContent');
+        const closePreviewModal = document.getElementById('closePreviewModal');
+
+        const relatedModal = document.getElementById('relatedModal');
+        const relatedList = document.getElementById('relatedList');
+        const closeRelatedModal = document.getElementById('closeRelatedModal');
 
         const toast = document.getElementById('toast');
+
+        function getApiKey() {
+            return apiKeyInput.value.trim();
+        }
 
         function showToast(message, type = 'info') {
             toast.textContent = message;
@@ -991,8 +1340,25 @@
                 case 'code': return '💻';
                 case 'image': return '🖼️';
                 case 'text': return '📝';
+                case 'pdf': return '📄';
+                case 'markdown': return '📝';
+                case 'audio': return '🎵';
+                case 'video': return '🎬';
                 default: return '📄';
             }
+        }
+
+        function getFileTypeName(fileType) {
+            const names = {
+                'image': '图片',
+                'pdf': 'PDF文档',
+                'code': '代码文件',
+                'markdown': 'Markdown文档',
+                'text': '文本文件',
+                'audio': '音频文件',
+                'video': '视频文件'
+            };
+            return names[fileType] || '文件';
         }
 
         function renderTimeline() {
@@ -1019,20 +1385,38 @@
 
                 const labelInfo = labelConfig[nodeData.label] || labelConfig['other'];
 
+                const autoTagsHtml = nodeData.tags && nodeData.tags.length > 0 
+                    ? `<div class="auto-tags">
+                        ${nodeData.tags.map(tag => `
+                            <span class="auto-tag">
+                                <span class="tag-icon">🏷️</span>
+                                ${tag}
+                            </span>
+                        `).join('')}
+                       </div>`
+                    : '';
+
+                const hasFile = nodeData.file_name && nodeData.file_type !== 'other';
+                const hasEmbedding = nodeData.embedding_vector && nodeData.embedding_vector.length > 0;
+
                 nodeEl.innerHTML = `
                     <div class="node-header">
                         <span class="node-timestamp">${formatDisplayTime(nodeData.timestamp)}</span>
                         <div class="node-actions">
+                            ${hasFile ? `<button class="action-btn preview" data-id="${nodeData.id}" data-file="${nodeData.file_name}">👁️ 预览</button>` : ''}
+                            <button class="action-btn related" data-id="${nodeData.id}">🔗 相关</button>
                             <button class="action-btn edit" data-id="${nodeData.id}">✏️ 编辑</button>
                             <button class="action-btn delete" data-id="${nodeData.id}">🗑️ 删除</button>
                         </div>
                     </div>
                     <span class="node-label ${labelInfo.class}">${labelInfo.text}</span>
+                    ${autoTagsHtml}
                     <div class="node-content">${nodeData.content || '（无内容描述）'}</div>
                     ${nodeData.file_name ? `
-                        <div class="node-file-info">
+                        <div class="node-file-info" data-file="${nodeData.file_name}" data-type="${nodeData.file_type}">
                             <span class="file-icon">${getFileIcon(nodeData.file_type)}</span>
                             <span>${nodeData.file_name}</span>
+                            <span style="font-size: 0.7rem; color: #a0aec0; margin-left: auto;">点击预览</span>
                         </div>
                     ` : ''}
                 `;
@@ -1053,6 +1437,57 @@
                     deleteNode(id);
                 });
             });
+
+            document.querySelectorAll('.action-btn.preview').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const fileName = btn.dataset.file;
+                    openPreviewModal(fileName);
+                });
+            });
+
+            document.querySelectorAll('.action-btn.related').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    openRelatedModal(id);
+                });
+            });
+
+            document.querySelectorAll('.node-file-info').forEach(info => {
+                info.addEventListener('click', () => {
+                    const fileName = info.dataset.file;
+                    if (fileName) {
+                        openPreviewModal(fileName);
+                    }
+                });
+            });
+        }
+
+        function renderTagsSelector(selectedTags, suggestedTags = []) {
+            tagsSelector.innerHTML = '';
+            
+            AVAILABLE_TAGS.forEach(tag => {
+                const isSelected = selectedTags.includes(tag);
+                const isSuggested = suggestedTags.includes(tag);
+                
+                const tagEl = document.createElement('div');
+                tagEl.className = `tag-option ${isSelected ? 'selected' : ''} ${isSuggested ? 'ai-suggested' : ''}`;
+                tagEl.textContent = tag;
+                tagEl.dataset.tag = tag;
+                
+                tagEl.addEventListener('click', () => {
+                    tagEl.classList.toggle('selected');
+                });
+                
+                tagsSelector.appendChild(tagEl);
+            });
+        }
+
+        function getSelectedTags() {
+            const selected = [];
+            tagsSelector.querySelectorAll('.tag-option.selected').forEach(el => {
+                selected.push(el.dataset.tag);
+            });
+            return selected;
         }
 
         async function uploadFile(file) {
@@ -1073,14 +1508,23 @@
                         id: result.data.id,
                         timestamp: result.data.timestamp,
                         label: 'other',
+                        tags: [],
                         content: result.data.content_preview || `文件: ${result.data.file_name}`,
                         file_name: result.data.file_name,
-                        file_type: result.data.file_type
+                        file_type: result.data.file_type,
+                        embedding_vector: []
                     };
 
                     timelineNodes.push(nodeData);
                     renderTimeline();
                     showToast(`文件 "${file.name}" 上传成功！`, 'success');
+                    
+                    const apiKey = getApiKey();
+                    if (apiKey) {
+                        await autoTagNode(nodeData.id, nodeData.content, nodeData.file_name);
+                        await generateEmbeddingForNode(nodeData.id, nodeData.content);
+                    }
+                    
                     openEditModal(nodeData.id);
                 } else {
                     showToast('上传失败: ' + (result.detail || '未知错误'), 'error');
@@ -1090,20 +1534,115 @@
             }
         }
 
+        async function autoTagNode(nodeId, content, fileName = null) {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auto-tag', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        content: content,
+                        file_name: fileName
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.data.tags.length > 0) {
+                    const node = timelineNodes.find(n => n.id === nodeId);
+                    if (node) {
+                        node.tags = result.data.tags;
+                        aiSuggestedTags = [...result.data.tags];
+                        renderTimeline();
+                    }
+                }
+            } catch (error) {
+                console.error('Auto-tag failed:', error);
+            }
+        }
+
+        async function generateEmbeddingForNode(nodeId, content) {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/generate-embedding', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        content: content,
+                        node_id: nodeId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const node = timelineNodes.find(n => n.id === nodeId);
+                    if (node) {
+                        node.embedding_vector = result.data.embedding_vector;
+                    }
+                }
+            } catch (error) {
+                console.error('Embedding generation failed:', error);
+            }
+        }
+
         function addManualNode() {
             const id = 'manual_' + Date.now();
             const nodeData = {
                 id: id,
                 timestamp: new Date().toISOString(),
                 label: 'other',
+                tags: [],
                 content: '',
                 file_name: null,
-                file_type: null
+                file_type: null,
+                embedding_vector: []
             };
 
             timelineNodes.push(nodeData);
             renderTimeline();
             openEditModal(id);
+        }
+
+        async function loadTestData() {
+            try {
+                const response = await fetch('/api/test-data');
+                const result = await response.json();
+
+                if (result.success) {
+                    timelineNodes = result.data.nodes.map(node => ({
+                        ...node,
+                        embedding_vector: []
+                    }));
+                    renderTimeline();
+                    showToast('测试数据加载成功！共 ' + timelineNodes.length + ' 条记录', 'success');
+                    
+                    const apiKey = getApiKey();
+                    if (apiKey) {
+                        showToast('正在为测试数据生成向量嵌入和自动标签...', 'info');
+                        for (const node of timelineNodes) {
+                            await generateEmbeddingForNode(node.id, node.content);
+                        }
+                        showToast('向量嵌入和标签生成完成！', 'success');
+                    }
+                }
+            } catch (error) {
+                showToast('加载测试数据失败: ' + error.message, 'error');
+            }
         }
 
         function openEditModal(nodeId) {
@@ -1115,17 +1654,20 @@
                 editTimestamp.value = formatDateTimeLocal(node.timestamp);
                 editLabel.value = node.label;
                 editContent.value = node.content || '';
+                aiSuggestedTags = node.tags ? [...node.tags] : [];
+                renderTagsSelector(node.tags || [], aiSuggestedTags);
             }
 
             editModal.classList.add('active');
         }
 
-        function closeEditModal() {
+        function closeEditModalFunc() {
             editModal.classList.remove('active');
             currentEditNodeId = null;
+            aiSuggestedTags = [];
         }
 
-        function saveNode() {
+        async function saveNode() {
             if (!currentEditNodeId) return;
 
             const node = timelineNodes.find(n => n.id === currentEditNodeId);
@@ -1133,12 +1675,60 @@
                 node.timestamp = new Date(editTimestamp.value).toISOString();
                 node.label = editLabel.value;
                 node.content = editContent.value;
+                node.tags = getSelectedTags();
+
+                const apiKey = getApiKey();
+                if (apiKey && (!node.embedding_vector || node.embedding_vector.length === 0)) {
+                    await generateEmbeddingForNode(node.id, node.content);
+                }
 
                 renderTimeline();
                 showToast('保存成功！', 'success');
             }
 
-            closeEditModal();
+            closeEditModalFunc();
+        }
+
+        async function handleAutoTag() {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                showToast('请先输入 DeepSeek API Key', 'error');
+                return;
+            }
+
+            const content = editContent.value;
+            const node = timelineNodes.find(n => n.id === currentEditNodeId);
+            const fileName = node ? node.file_name : null;
+
+            try {
+                autoTagBtn.disabled = true;
+                autoTagBtn.textContent = '🤖 AI 正在分析...';
+
+                const response = await fetch('/api/auto-tag', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        content: content,
+                        file_name: fileName
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.data.tags.length > 0) {
+                    aiSuggestedTags = result.data.tags;
+                    renderTagsSelector(result.data.tags, aiSuggestedTags);
+                    showToast('AI 标签推荐完成！', 'success');
+                }
+            } catch (error) {
+                showToast('AI 标签推荐失败: ' + error.message, 'error');
+            } finally {
+                autoTagBtn.disabled = false;
+                autoTagBtn.textContent = '🤖 AI 重新推荐标签';
+            }
         }
 
         function deleteNode(nodeId) {
@@ -1150,8 +1740,182 @@
             }
         }
 
+        async function openPreviewModal(fileName) {
+            previewTitle.textContent = `文件预览: ${fileName}`;
+            previewContent.innerHTML = '<div class="loading-overlay" style="position: relative;"><div class="spinner"></div><div class="loading-text">加载文件中...</div></div>';
+            previewModal.classList.add('active');
+
+            try {
+                const response = await fetch(`/api/file-preview/${encodeURIComponent(fileName)}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const data = result.data;
+                    let previewHtml = '';
+
+                    switch (data.file_type) {
+                        case 'image':
+                            previewHtml = `<img src="${data.content}" class="preview-image" alt="${fileName}">`;
+                            break;
+
+                        case 'pdf':
+                            previewHtml = `<iframe src="${data.content}" class="preview-pdf"></iframe>`;
+                            break;
+
+                        case 'code':
+                        case 'markdown':
+                        case 'text':
+                            const langClass = data.file_type === 'code' ? 'preview-code' : 'preview-code';
+                            previewHtml = `<pre class="${langClass}">${escapeHtml(data.content)}</pre>`;
+                            break;
+
+                        case 'audio':
+                            previewHtml = `<audio controls class="preview-media">
+                                <source src="${data.file_url}" type="${data.mime_type}">
+                                您的浏览器不支持音频播放。
+                            </audio>`;
+                            break;
+
+                        case 'video':
+                            previewHtml = `<video controls class="preview-media">
+                                <source src="${data.file_url}" type="${data.mime_type}">
+                                您的浏览器不支持视频播放。
+                            </video>`;
+                            break;
+
+                        default:
+                            previewHtml = `<div class="no-related">
+                                <div class="icon">📄</div>
+                                <p>${data.content || '此文件类型暂不支持在线预览'}</p>
+                            </div>`;
+                    }
+
+                    previewContent.innerHTML = previewHtml;
+                } else {
+                    previewContent.innerHTML = `<div class="no-related">
+                        <div class="icon">❌</div>
+                        <p>加载文件失败: ${result.detail || '未知错误'}</p>
+                    </div>`;
+                }
+            } catch (error) {
+                previewContent.innerHTML = `<div class="no-related">
+                    <div class="icon">❌</div>
+                    <p>加载文件失败: ${error.message}</p>
+                </div>`;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function closePreviewModalFunc() {
+            previewModal.classList.remove('active');
+        }
+
+        async function openRelatedModal(nodeId) {
+            const apiKey = getApiKey();
+            
+            if (!apiKey) {
+                relatedList.innerHTML = `<div class="no-related">
+                    <div class="icon">🔑</div>
+                    <p>请先配置 DeepSeek API Key</p>
+                    <p style="font-size: 0.85rem; margin-top: 8px; color: #718096;">
+                        智能推荐功能需要向量嵌入支持
+                    </p>
+                </div>`;
+                relatedModal.classList.add('active');
+                return;
+            }
+
+            const currentNode = timelineNodes.find(n => n.id === nodeId);
+            if (currentNode && (!currentNode.embedding_vector || currentNode.embedding_vector.length === 0)) {
+                showToast('正在为当前笔记生成向量嵌入...', 'info');
+                await generateEmbeddingForNode(nodeId, currentNode.content);
+            }
+
+            relatedList.innerHTML = '<div class="no-related"><div class="spinner"></div><div class="loading-text" style="margin-top: 16px;">正在查找相关记录...</div></div>';
+            relatedModal.classList.add('active');
+
+            try {
+                const response = await fetch('/api/similarity-search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        node_id: nodeId,
+                        top_k: 5
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const similarNodes = result.data.similar_nodes;
+
+                    if (similarNodes.length === 0) {
+                        relatedList.innerHTML = `<div class="no-related">
+                            <div class="icon">🔍</div>
+                            <p>暂无相关记录</p>
+                            <p style="font-size: 0.85rem; margin-top: 8px; color: #718096;">
+                                添加更多笔记后，系统会自动推荐相关内容
+                            </p>
+                        </div>`;
+                    } else {
+                        let html = '';
+                        similarNodes.forEach(node => {
+                            const similarityPercent = (node.similarity * 100).toFixed(1);
+                            const tagsHtml = node.tags && node.tags.length > 0 
+                                ? `<div class="related-tags">
+                                    ${node.tags.map(tag => `<span class="related-tag">${tag}</span>`).join('')}
+                                   </div>`
+                                : '';
+
+                            html += `
+                                <div class="related-item" data-id="${node.node_id}">
+                                    <div class="related-header">
+                                        <span class="node-timestamp">${node.timestamp ? formatDisplayTime(node.timestamp) : ''}</span>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <div class="similarity-bar">
+                                                <div class="similarity-fill" style="width: ${similarityPercent}%"></div>
+                                            </div>
+                                            <span class="similarity-text">${similarityPercent}%</span>
+                                        </div>
+                                    </div>
+                                    <div class="related-content">${node.content || '（无内容）'}</div>
+                                    ${tagsHtml}
+                                </div>
+                            `;
+                        });
+                        relatedList.innerHTML = html;
+
+                        relatedList.querySelectorAll('.related-item').forEach(item => {
+                            item.addEventListener('click', () => {
+                                const id = item.dataset.id;
+                                closeRelatedModalFunc();
+                                openEditModal(id);
+                            });
+                        });
+                    }
+                }
+            } catch (error) {
+                relatedList.innerHTML = `<div class="no-related">
+                    <div class="icon">❌</div>
+                    <p>查找相关记录失败: ${error.message}</p>
+                </div>`;
+            }
+        }
+
+        function closeRelatedModalFunc() {
+            relatedModal.classList.remove('active');
+        }
+
         async function generateNarrative() {
-            const apiKey = apiKeyInput.value.trim();
+            const apiKey = getApiKey();
             
             if (!apiKey) {
                 showToast('请先输入 DeepSeek API Key', 'error');
@@ -1282,24 +2046,49 @@
         });
 
         addManualBtn.addEventListener('click', addManualNode);
+        loadTestDataBtn.addEventListener('click', loadTestData);
         toggleVisibility.addEventListener('click', toggleApiKeyVisibility);
         generateBtn.addEventListener('click', generateNarrative);
         copyBtn.addEventListener('click', copyToClipboard);
         exportBtn.addEventListener('click', exportMarkdown);
 
-        closeModal.addEventListener('click', closeEditModal);
-        cancelBtn.addEventListener('click', closeEditModal);
-        saveBtn.addEventListener('click', saveNode);
+        closeEditModal.addEventListener('click', closeEditModalFunc);
+        cancelEditBtn.addEventListener('click', closeEditModalFunc);
+        saveEditBtn.addEventListener('click', saveNode);
+        autoTagBtn.addEventListener('click', handleAutoTag);
+
+        closePreviewModal.addEventListener('click', closePreviewModalFunc);
+        closeRelatedModal.addEventListener('click', closeRelatedModalFunc);
 
         editModal.addEventListener('click', (e) => {
             if (e.target === editModal) {
-                closeEditModal();
+                closeEditModalFunc();
+            }
+        });
+
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal) {
+                closePreviewModalFunc();
+            }
+        });
+
+        relatedModal.addEventListener('click', (e) => {
+            if (e.target === relatedModal) {
+                closeRelatedModalFunc();
             }
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && editModal.classList.contains('active')) {
-                closeEditModal();
+            if (e.key === 'Escape') {
+                if (editModal.classList.contains('active')) {
+                    closeEditModalFunc();
+                }
+                if (previewModal.classList.contains('active')) {
+                    closePreviewModalFunc();
+                }
+                if (relatedModal.classList.contains('active')) {
+                    closeRelatedModalFunc();
+                }
             }
         });
 
