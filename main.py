@@ -536,12 +536,18 @@ async def similarity_search(request: SimilaritySearchRequest):
             }
         })
 
-@app.get("/api/file-preview/{filename}")
-async def get_file_preview(filename: str):
+@app.get("/api/file-preview")
+async def get_file_preview(filename: str = Query(...)):
     try:
+        filename = os.path.basename(filename)
         filepath = os.path.join(UPLOAD_DIR, filename)
         if not os.path.exists(filepath):
-            raise HTTPException(status_code=404, detail="文件不存在")
+            return JSONResponse(content={
+                "success": False,
+                "data": {
+                    "error": f"文件不存在: {filename}"
+                }
+            })
         
         file_ext = os.path.splitext(filename)[1].lower()
         file_type = get_file_type(file_ext)
@@ -622,7 +628,14 @@ async def get_file_preview(filename: str):
             })
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(content={
+            "success": False,
+            "data": {
+                "error": str(e)
+            }
+        })
 
 @app.post("/api/generate")
 async def generate_narrative(request: GenerateRequest):

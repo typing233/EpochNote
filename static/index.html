@@ -1825,7 +1825,7 @@
             previewModal.classList.add('active');
 
             try {
-                const response = await fetch(`/api/file-preview/${encodeURIComponent(fileName)}`);
+                const response = await fetch(`/api/file-preview?filename=${encodeURIComponent(fileName)}`);
                 const result = await response.json();
 
                 if (result.success) {
